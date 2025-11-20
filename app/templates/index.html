@@ -71,11 +71,23 @@
                 
                 <div class="mt-auto d-flex justify-content-between align-items-center">
                     <div class="btn-group">
+                        <!-- View Button -->
                         <a href="{{ url_for('book_details', book_id=book._id) }}" class="btn btn-sm btn-outline-secondary">View</a>
                         
+                        <!-- Download Button -->
                         {% if book.pdf_file %}
                             <a href="{{ url_for('static', filename='uploads/' + book.pdf_file) }}" class="btn btn-sm btn-outline-primary" download>
                                 Download PDF
+                            </a>
+                        {% endif %}
+
+                        <!-- NEW: DELETE BUTTON (Only Visible to Admins) -->
+                        {% if current_user.is_authenticated and getattr(current_user, 'role', None) == 'Admin' %}
+                            <a href="{{ url_for('delete_book', book_id=book._id) }}" 
+                               class="btn btn-sm btn-danger ml-1" 
+                               onclick="return confirm('Are you sure you want to delete this book permanently?');" 
+                               title="Delete Book">
+                                <i class="fas fa-trash"></i>
                             </a>
                         {% endif %}
                     </div>

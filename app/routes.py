@@ -290,3 +290,28 @@ def reset_token(token):
         return redirect(url_for('login'))
     return render_template('reset_token.html', title='Reset Password', form=form)
 
+# --- DELETE BOOK ROUTE (Admin Only) ---
+from bson.objectid import ObjectId
+from flask import flash, redirect, url_for
+from flask_login import login_required, current_user
+
+@app.route("/book/<book_id>/delete")
+@login_required
+def delete_book(book_id):
+    # 1. Security Check: Only Admins allowed
+    if getattr(current_user, 'role', None) != 'Admin':
+        flash('Access Denied. Only Admins can delete books.', 'danger')
+        return redirect(url_for('home'))
+
+    try:
+        # 2. Find and Delete
+        result = db.books.delete_one({"_id": ObjectId(book_id)})
+        if result.deleted_count == 0:
+            flash('Book not found or already deleted.', 'warning')
+        else:
+            flash('Book deleted successfully.', 'success')
+    except Exception as e:
+        # log the exception if you have logging configured
+        flash('An error occurred while deleting the book.', 'danger')
+
+    return redirect(url_for('home'))
