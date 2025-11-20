@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="auth-wrapper">
+    <div class="auth-card">
+        
+        <div class="auth-form-side">
+            <div class="auth-header">
+                <h2>Welcome Back!!</h2>
+                <p class="text-muted">Enter your credentials to access your library.</p>
+            </div>
+
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+                
+                <div class="form-group custom-input-group">
+                    <i class="fas fa-envelope"></i>
+                    {% if form.email.errors %}
+                        {{ form.email(class="custom-input is-invalid", placeholder="Email Address") }}
+                    {% else %}
+                        {{ form.email(class="custom-input", placeholder="Email Address") }}
+                    {% endif %}
+                </div>
+
+                <div class="form-group custom-input-group">
+                    <i class="fas fa-lock"></i>
+                    {% if form.password.errors %}
+                        {{ form.password(class="custom-input is-invalid", placeholder="Password") }}
+                    {% else %}
+                        {{ form.password(class="custom-input", placeholder="Password") }}
+                    {% endif %}
+                </div>
+
+                <div class="text-right mb-3">
+                    <a href="#" class="text-muted small" style="text-decoration: none;">Forgot Password?</a>
+                </div>
+
+                {{ form.submit(class="btn btn-auth", value="Login") }}
+
+            </form>
+
+            <div class="social-login">
+                <a href="#" class="social-btn"><i class="fab fa-google" style="color: #DB4437;"></i></a>
+                <a href="#" class="social-btn"><i class="fab fa-facebook-f" style="color: #4267B2;"></i></a>
+                <a href="#" class="social-btn"><i class="fab fa-apple" style="color: #000;"></i></a>
+            </div>
+            
+            <div class="text-center mt-4">
+                <small class="text-muted">Don't have an account? <a href="{{ url_for('register') }}" style="color: #ff9f43; font-weight: bold;">Sign up</a></small>
+            </div>
+        </div>
+
+        <div class="auth-image-side">
+            <img src="{{ url_for('static', filename='images/hero.avif') }}" class="hero-img" alt="Login Illustration">
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Admin Dashboard - Pending Approvals</h2>
+    
+    {% if books|length == 0 %}
+        <div class="alert alert-info">No pending book submissions.</div>
+    {% else %}
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered bg-white">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>Cover</th>
+                        <th>Details</th>
+                        <th>Uploader</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for book in books %}
+                    <tr>
+                        <td style="width: 100px;">
+                            {% if book.cover_image %}
+                                <img src="{{ url_for('static', filename='covers/' + book.cover_image) }}" 
+                                     alt="Cover" style="width: 80px; height: 120px; object-fit: cover;">
+                            {% else %}
+                                <div style="width: 80px; height: 120px; background-color: #ccc; display: flex; align-items: center; justify-content: center; text-align: center;">
+                                    <small>No Cover</small>
+                                </div>
+                            {% endif %}
+                        </td>
+                        
+                        <td>
+                            <h5>{{ book.title }}</h5>
+                            <p class="text-muted mb-1">by {{ book.author }}</p>
+                            
+                            {% if book.genre %}
+                                <span class="badge badge-primary">{{ book.genre }}</span>
+                            {% else %}
+                                <span class="badge badge-secondary">Uncategorized</span>
+                            {% endif %}
+                            
+                            <p class="mt-2 small">{{ book.description if book.description else "No description provided." }}</p>
+                            
+                            {% if book.pdf_file %}
+                                <a href="{{ url_for('static', filename='uploads/' + book.pdf_file) }}" target="_blank" class="text-info">View PDF</a>
+                            {% else %}
+                                <span class="text-muted">PDF Missing</span>
+                            {% endif %}
+                        </td>
+                        
+                        <td>
+                           <small>User ID: {{ book.user_id }}</small>
+                        </td>
+                        
+                        <td style="width: 200px;">
+                            <a href="{{ url_for('approve_book', book_id=book._id) }}" class="btn btn-success btn-block mb-2">Approve</a>
+                            <a href="{{ url_for('reject_book', book_id=book._id) }}" class="btn btn-danger btn-block">Reject</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

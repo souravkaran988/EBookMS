@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - EBookMS{% endblock %}
+{% block content %}
+<h2>Dashboard</h2>
+<p>Welcome, {{ user.username }}!</p>
+<a href="/upload">Upload Book</a>
+<ul>
+    {% for book in books %}
+    <li><a href="/book/{{ book.id }}">{{ book.title }}</a></li>
+    {% endfor %}
+</ul>
+{% endblock %}

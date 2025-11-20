@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-3">
+    <div class="row mb-2">
+        <div class="col-md-12 d-flex justify-content-between align-items-center">
+            <h4>
+                📖 {{ book.title }} 
+                <small class="text-muted">by {{ book.author }}</small>
+            </h4>
+            <a href="{{ url_for('book_details', book_id=book._id) }}" class="btn btn-outline-secondary btn-sm">
+                &larr; Back to Details
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
+                    {% if book.pdf_file %}
+                        <iframe 
+                            src="{{ url_for('static', filename='uploads/' + book.pdf_file) }}" 
+                            width="100%" 
+                            height="800px" 
+                            style="border: none;"
+                            type="application/pdf">
+                        </iframe>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <h3>Error: PDF file not found.</h3>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

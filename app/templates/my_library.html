@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4 border-bottom pb-2">My Personal Reading List</h2>
+
+    {% if books|length == 0 %}
+        <div class="text-center py-5">
+            <h3 class="text-muted">Your reading list is empty.</h3>
+            <p>Go explore the library and save some books!</p>
+            <a href="{{ url_for('home') }}" class="btn btn-primary">Browse Books</a>
+        </div>
+    {% else %}
+        <div class="row">
+            {% for book in books %}
+            <div class="col-md-3 d-flex align-items-stretch">
+                <div class="card mb-4 shadow-sm" style="width: 100%;">
+                    <div style="height: 200px; overflow: hidden; background-color: #eee;">
+                        {% if book.cover_image %}
+                            <img src="{{ url_for('static', filename='covers/' + book.cover_image) }}" class="card-img-top" alt="Cover" style="height: 100%; object-fit: cover;">
+                        {% else %}
+                            <div class="d-flex align-items-center justify-content-center h-100">No Cover</div>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-title text-truncate">{{ book.title }}</h6>
+                        <a href="{{ url_for('book_details', book_id=book._id) }}" class="btn btn-sm btn-block btn-outline-secondary">View</a>
+                        <a href="{{ url_for('remove_from_reading_list', book_id=book._id) }}" class="btn btn-sm btn-block btn-light text-danger mt-1">Remove</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    <hr class="my-5">
+    <h3 class="mb-4">✨ Recommended For You</h3>
+    <p class="text-muted">Based on the books in your library, our AI thinks you might like these:</p>
+
+    {% if recommendations|length == 0 %}
+        <div class="alert alert-secondary">
+            Save more books to your library to get personalized recommendations!
+        </div>
+    {% else %}
+        <div class="row">
+            {% for book in recommendations %}
+            <div class="col-md-3 d-flex align-items-stretch">
+                <div class="card mb-4 shadow-sm border-info" style="width: 100%;">
+                    <div class="card-header bg-transparent border-info text-info">Suggestion</div>
+                    <div style="height: 200px; overflow: hidden; background-color: #eee;">
+                        {% if book.cover_image %}
+                            <img src="{{ url_for('static', filename='covers/' + book.cover_image) }}" class="card-img-top" alt="Cover" style="height: 100%; object-fit: cover;">
+                        {% else %}
+                            <div class="d-flex align-items-center justify-content-center h-100">No Cover</div>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-title text-truncate">{{ book.title }}</h6>
+                        <p class="small text-muted">{{ book.genre }}</p>
+                        <a href="{{ url_for('book_details', book_id=book._id) }}" class="btn btn-sm btn-block btn-info">View Book</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

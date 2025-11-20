@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card shadow">
+                {% if book.cover_image %}
+                    <img src="{{ url_for('static', filename='covers/' + book.cover_image) }}" class="card-img-top" alt="Book Cover">
+                {% else %}
+                    <div style="height: 400px; background-color: #eee; display: flex; align-items: center; justify-content: center;">No Cover</div>
+                {% endif %}
+               <div class="card-body text-center">
+                    {% if book.pdf_file %}
+                        <a href="{{ url_for('read_book', book_id=book._id) }}" class="btn btn-success btn-block mb-2">
+                            📖 Read Now
+                        </a>
+                        
+                        <a href="{{ url_for('static', filename='uploads/' + book.pdf_file) }}" class="btn btn-outline-primary btn-block" download>
+                            Download PDF
+                        </a>
+                    {% else %}
+                        <button class="btn btn-secondary btn-block" disabled>PDF Unavailable</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="mb-0">{{ book.title }}</h1>
+                {% if book.genre %}
+                    <span class="badge badge-info p-2">{{ book.genre }}</span>
+                {% endif %}
+            </div>
+            <h4 class="text-muted mb-4">by {{ book.author }}</h4>
+
+            <div class="mb-4">
+                {% if book._id in current_user.saved_books %}
+                    <a href="{{ url_for('remove_from_reading_list', book_id=book._id) }}" class="btn btn-danger btn-sm">
+                        ❌ Remove from Reading List
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('add_to_reading_list', book_id=book._id) }}" class="btn btn-outline-danger btn-sm">
+                        ♥ Add to Reading List
+                    </a>
+                {% endif %}
+            </div>
+
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="desc-tab" data-toggle="tab" href="#desc" role="tab">Description</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="ai-tab" data-toggle="tab" href="#ai" role="tab">AI Summary</a>
+                </li>
+            </ul>
+
+            <div class="tab-content mt-3" id="myTabContent">
+                <div class="tab-pane fade show active" id="desc" role="tabpanel">
+                    <p class="lead">{{ book.description if book.description else "No description provided." }}</p>
+                </div>
+                
+                <div class="tab-pane fade" id="ai" role="tabpanel">
+                    <div class="alert alert-secondary">
+                        <h5 class="alert-heading">✨ AI Analysis</h5>
+                        <hr>
+                        <p>{{ book.summary }}</p>
+                        {% if book.summary == "No summary yet" %}
+                            <p class="text-muted">No summary exists for this book yet.</p>
+                            <div class="text-center mt-3">
+                                <a href="{{ url_for('summarize_book', book_id=book._id) }}" class="btn btn-warning shadow-sm">
+                                    ✨ Generate AI Summary
+                                </a>
+                                <p class="small text-muted mt-2">Note: This may take 10-20 seconds.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

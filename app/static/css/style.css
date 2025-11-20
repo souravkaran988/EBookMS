@@ -1,0 +1,143 @@
+/* --- 3D SOFT LOGIN UI --- */
+
+/* 1. Background matches the soft beige/peach tone */
+body {
+    background-color: #f5e0d3; /* Soft peach background */
+    background-image: linear-gradient(135deg, #f5e0d3 0%, #fff0e3 100%);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* 2. The Card Container */
+.auth-wrapper {
+    min-height: 90vh; /* Full screen height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.auth-card {
+    background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent white */
+    backdrop-filter: blur(10px); /* Glass effect */
+    border-radius: 30px; /* Very round corners */
+    box-shadow: 0 20px 40px rgba(184, 134, 107, 0.2); /* Soft shadow */
+    width: 1000px;
+    max-width: 95%;
+    display: flex;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+/* 3. Left Side (Form) */
+.auth-form-side {
+    flex: 1;
+    padding: 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.auth-header h2 {
+    color: #2d3436;
+    font-weight: 800;
+    margin-bottom: 10px;
+}
+
+/* 4. Inputs (Rounded "Pill" shape) */
+.custom-input-group {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.custom-input-group i {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #a4b0be;
+    z-index: 10;
+}
+
+.custom-input {
+    border-radius: 50px; /* Pill shape */
+    background-color: #fff;
+    border: none;
+    padding: 15px 20px 15px 50px; /* Space for icon */
+    width: 100%;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+    transition: all 0.3s ease;
+}
+
+.custom-input:focus {
+    outline: none;
+    box-shadow: 0 5px 20px rgba(255, 159, 67, 0.2);
+    transform: translateY(-2px);
+}
+
+/* 5. The Orange "Login" Button */
+.btn-auth {
+    background: linear-gradient(to right, #ff9f43, #ff6b6b); /* Orange Gradient */
+    border: none;
+    border-radius: 50px; /* Pill shape */
+    color: white;
+    font-weight: bold;
+    padding: 12px;
+    margin-top: 20px;
+    box-shadow: 0 10px 20px rgba(255, 107, 107, 0.3);
+    width: 100%;
+    transition: transform 0.2s;
+}
+
+.btn-auth:hover {
+    transform: scale(1.02);
+    color: white;
+    text-decoration: none;
+}
+
+/* 6. Social Icons (Circles) */
+.social-login {
+    margin-top: 30px;
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.social-btn {
+    width: 45px;
+    height: 45px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    color: #555;
+    transition: 0.3s;
+    text-decoration: none;
+}
+
+.social-btn:hover {
+    transform: translateY(-3px);
+    background-color: #fff;
+}
+
+/* 7. Right Side (Image) */
+.auth-image-side {
+    flex: 1.2; /* Make image side slightly wider */
+    background-color: #fbece2; /* Lighter peach to blend */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-img {
+    width: 110%; /* Make it slightly larger than container for "pop" */
+    object-fit: contain;
+}
+
+/* Mobile Fix */
+@media (max-width: 768px) {
+    .auth-image-side { display: none; }
+}
