@@ -1,11 +1,12 @@
 import os
 import secrets
 from flask import render_template, url_for, flash, redirect, request, current_app
-from app import app, db, bcrypt
-from app.forms import RegistrationForm, LoginForm, BookForm
+from app import app, db, bcrypt, mail
+from app.forms import RegistrationForm, LoginForm, BookForm, RequestResetForm, ResetPasswordForm
 from app.models import User
 from flask_login import login_user, current_user, logout_user, login_required
 from bson.objectid import ObjectId
+from flask_mail import Message
 import PyPDF2
 
 # Import AI functions
@@ -14,21 +15,17 @@ from app.ai_utils import generate_summary, get_recommendations
 # --- 1. GATEKEEPER ROUTE ---
 @app.route("/")
 def root():
-    # If user is logged in, send them to the dashboard
     if current_user.is_authenticated:
         return redirect(url_for('home'))
-    # If not, force them to the Login page immediately
     return redirect(url_for('login'))
 
 # --- 2. DASHBOARD & SEARCH ---
 @app.route("/home")
 @login_required
 def home():
-    # Get the search query from the URL (e.g., /home?q=python)
     query = request.args.get('q')
     
     if query:
-        # Search for books where Title OR Genre OR Author contains the query
         books = list(db.books.find({
             "status": "approved",
             "$or": [
@@ -38,7 +35,6 @@ def home():
             ]
         }))
     else:
-        # Show all approved books (Newest first)
         books = list(db.books.find({"status": "approved"}).sort("_id", -1))
         
     return render_template('index.html', books=books)
@@ -55,8 +51,8 @@ def register():
             "username": form.username.data,
             "email": form.email.data,
             "password": hashed_password,
-            "role": "User", # Default role
-            "saved_books": [] # Initialize empty reading list
+            "role": "User",
+            "saved_books": []
         }
         db.users.insert_one(user_data)
         flash('Your account has been created! You can now log in.', 'success')
@@ -82,7 +78,7 @@ def login():
 @app.route("/logout")
 def logout():
     logout_user()
-    return redirect(url_for('login')) # Redirect to login page after logout
+    return redirect(url_for('login'))
 
 # --- 4. HELPER FUNCTION FOR FILES ---
 def save_file(form_file, folder_name):
@@ -100,26 +96,20 @@ def new_book():
     form = BookForm()
     if form.validate_on_submit():
         if form.pdf.data and form.cover_photo.data:
-            # Save Files
             pdf_filename, pdf_path = save_file(form.pdf.data, 'uploads')
             cover_filename, _ = save_file(form.cover_photo.data, 'covers')
-            
-            # Determine Genre (Dropdown vs Custom)
             final_genre = form.custom_genre.data if form.genre.data == 'Other' else form.genre.data
             
-            # Extract Text for AI
             text_content = ""
             try:
                 with open(pdf_path, 'rb') as f:
                     reader = PyPDF2.PdfReader(f)
-                    # Extract first 10 pages only for speed
                     for page in reader.pages[:10]: 
                         text_content += page.extract_text()
             except Exception as e:
                 print(f"Error reading PDF: {e}")
                 text_content = "Could not read text from PDF."
 
-            # Save to DB
             book_data = {
                 "title": form.title.data,
                 "author": form.author.data,
@@ -129,7 +119,7 @@ def new_book():
                 "pdf_file": pdf_filename,
                 "content": text_content,
                 "user_id": current_user.id,
-                "status": "pending", # Pending Admin Approval
+                "status": "pending",
                 "summary": "No summary yet"
             }
             db.books.insert_one(book_data)
@@ -169,7 +159,6 @@ def summarize_book(book_id):
         flash('No text content found in this book.', 'warning')
         return redirect(url_for('book_details', book_id=book_id))
         
-    # Run AI
     summary_text = generate_summary(content)
     
     db.books.update_one(
@@ -203,7 +192,6 @@ def remove_from_reading_list(book_id):
 @app.route("/my_library")
 @login_required
 def my_library():
-    # Get User's Saved Books
     user = db.users.find_one({"_id": ObjectId(current_user.id)})
     saved_ids = user.get('saved_books', [])
     
@@ -211,7 +199,6 @@ def my_library():
     if saved_ids:
         my_books = list(db.books.find({"_id": {"$in": saved_ids}}))
     
-    # Get AI Recommendations based on saved books
     all_books = list(db.books.find({"status": "approved"}))
     recommendations = get_recommendations(my_books, all_books)
     
@@ -248,3 +235,57 @@ def reject_book(book_id):
     db.books.delete_one({"_id": ObjectId(book_id)})
     flash('Book rejected and removed.', 'warning')
     return redirect(url_for('admin_panel'))
+
+# --- 10. PASSWORD RESET LOGIC (REAL EMAIL) ---
+def send_reset_email(user):
+    token = user.get_reset_token()
+    msg = Message('Password Reset Request',
+                  sender='karansourav453@gmail.com',
+                  recipients=[user.email])
+    
+    link = url_for('reset_token', token=token, _external=True)
+    
+    msg.body = f'''To reset your password, visit the following link:
+{link}
+
+If you did not make this request then simply ignore this email and no changes will be made.
+'''
+    try:
+        mail.send(msg)
+        print("✅ Email Sent Successfully!")
+    except Exception as e:
+        print(f"❌ Email Failed to Send: {e}")
+
+@app.route("/reset_password", methods=['GET', 'POST'])
+def reset_request():
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+    form = RequestResetForm()
+    if form.validate_on_submit():
+        user_data = db.users.find_one({"email": form.email.data})
+        user = User(user_data)
+        send_reset_email(user)
+        flash('An email has been sent with instructions to reset your password.', 'info')
+        return redirect(url_for('login'))
+    return render_template('reset_request.html', title='Reset Password', form=form)
+
+@app.route("/reset_password/<token>", methods=['GET', 'POST'])
+def reset_token(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+    
+    user = User.verify_reset_token(token)
+    if user is None:
+        flash('That is an invalid or expired token', 'warning')
+        return redirect(url_for('reset_request'))
+    
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
+        db.users.update_one(
+            {"_id": ObjectId(user.id)},
+            {"$set": {"password": hashed_password}}
+        )
+        flash('Your password has been updated! You are now able to log in', 'success')
+        return redirect(url_for('login'))
+    return render_template('reset_token.html', title='Reset Password', form=form)

@@ -67,3 +67,19 @@ class BookForm(FlaskForm):
     description = TextAreaField('Short Description (Optional)', validators=[Optional()])
 
     submit = SubmitField('Submit for Approval')
+
+# --- PASSWORD RESET FORMS ---
+
+class RequestResetForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    submit = SubmitField('Request Password Reset')
+
+    def validate_email(self, email):
+        user = db.users.find_one({"email": email.data})
+        if user is None:
+            raise ValidationError('There is no account with that email. You must register first.')
+
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField('Password', validators=[DataRequired()])
+    confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
+    submit = SubmitField('Reset Password')
