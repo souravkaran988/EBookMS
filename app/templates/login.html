@@ -4,7 +4,6 @@
 <div class="auth-wrapper">
     <div class="auth-card">
         
-        <!-- Left Side: Form -->
         <div class="auth-form-side">
             <div class="auth-header">
                 <h2>Welcome Back!!</h2>
@@ -33,9 +32,8 @@
                 </div>
 
                 <div class="text-right mb-3">
-                    <!-- DEBUG TEST: We made this RED and LARGE to verify the file updated -->
-                    <a href="{{ url_for('reset_request') }}" style="color: red; font-weight: bold; font-size: 1.2em;">
-                        CLICK ME: Forgot Password?
+                    <a href="{{ url_for('reset_request') }}" class="text-muted">
+                        Forgot Password?
                     </a>
                 </div>
 
@@ -53,9 +51,8 @@
             </div>
         </div>
 
-        <!-- Right Side: Image -->
         <div class="auth-image-side">
-            <img src="{{ url_for('static', filename='images/login.avif') }}" class="hero-img" alt="Login Illustration">
+            <img src="https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80" class="hero-img" alt="Login Illustration">
         </div>
     </div>
 </div>

@@ -44,6 +44,14 @@
                         ♥ Add to Reading List
                     </a>
                 {% endif %}
+                
+                {% if current_user.role == 'Admin' %}
+                    <a href="{{ url_for('delete_book_permanent', book_id=book._id) }}" 
+                       class="btn btn-dark btn-sm ml-2"
+                       onclick="return confirm('Are you sure you want to PERMANENTLY delete this book? This cannot be undone.');">
+                        🗑️ Delete Book (Admin)
+                    </a>
+                {% endif %}
             </div>
 
             <ul class="nav nav-tabs" id="myTab" role="tablist">
