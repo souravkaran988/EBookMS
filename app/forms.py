@@ -1,7 +1,6 @@
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileField, FileAllowed, FileRequired
 from wtforms import StringField, PasswordField, SubmitField, BooleanField, TextAreaField, SelectField
-from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError, Optional
+from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError, Optional, URL
 from app import db
 
 class RegistrationForm(FlaskForm):
@@ -31,19 +30,18 @@ class BookForm(FlaskForm):
     title = StringField('Book Title', validators=[DataRequired()])
     author = StringField('Author', validators=[DataRequired()])
     
-    # 1. Cover Photo (Images only)
-    cover_photo = FileField('Cover Photo', validators=[
-        FileRequired(),
-        FileAllowed(['jpg', 'png', 'jpeg'], 'Images only!')
+    # CHANGED: Now asking for a Link (URL) instead of a File
+    cover_photo = StringField('Cover Image URL', validators=[
+        DataRequired(),
+        URL(message="Please enter a valid Image URL starting with http:// or https://")
     ])
 
-    # 2. PDF Upload
-    pdf = FileField('Upload PDF', validators=[
-        FileRequired(),
-        FileAllowed(['pdf'], 'PDFs only!')
+    # CHANGED: Now asking for a Link (URL) instead of a File
+    pdf = StringField('PDF Download URL', validators=[
+        DataRequired(),
+        URL(message="Please enter a valid PDF URL starting with http:// or https://")
     ])
 
-    # 3. Genre Dropdown
     genre = SelectField('Genre', choices=[
         ('Fiction', 'Fiction'),
         ('Non-Fiction', 'Non-Fiction'),
@@ -60,15 +58,9 @@ class BookForm(FlaskForm):
         ('Other', 'Other (Specify below)')
     ], validators=[DataRequired()])
 
-    # 4. Custom Genre (Only used if 'Other' is selected)
     custom_genre = StringField('If "Other", please specify:', validators=[Optional()])
-
-    # 5. Description (Optional)
     description = TextAreaField('Short Description (Optional)', validators=[Optional()])
-
     submit = SubmitField('Submit for Approval')
-
-# --- PASSWORD RESET FORMS ---
 
 class RequestResetForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="content-section">
-    <form method="POST" action="" enctype="multipart/form-data">
+    <form method="POST" action="">
         {{ form.hidden_tag() }}
         <fieldset class="form-group">
             <legend class="border-bottom mb-4">Upload a New Book</legend>
@@ -42,19 +42,25 @@
             </div>
 
             <div class="form-group">
-                <label class="form-control-label">Cover Photo</label>
-                {{ form.cover_photo(class="form-control-file") }}
+                <label class="form-control-label">Cover Image Link (URL)</label>
                 {% if form.cover_photo.errors %}
-                    <small class="text-danger">{% for error in form.cover_photo.errors %}{{ error }}{% endfor %}</small>
+                    {{ form.cover_photo(class="form-control form-control-lg is-invalid", placeholder="Paste image link here (e.g., https://imgur.com/...)") }}
+                    <div class="invalid-feedback">{% for error in form.cover_photo.errors %}<span>{{ error }}</span>{% endfor %}</div>
+                {% else %}
+                    {{ form.cover_photo(class="form-control form-control-lg", placeholder="Paste image link here (e.g., https://imgur.com/...)") }}
                 {% endif %}
+                <small class="form-text text-muted">Copy an image address from Google Images and paste it here.</small>
             </div>
 
             <div class="form-group">
-                <label class="form-control-label">Book PDF</label>
-                {{ form.pdf(class="form-control-file") }}
+                <label class="form-control-label">PDF Link (URL)</label>
                 {% if form.pdf.errors %}
-                    <small class="text-danger">{% for error in form.pdf.errors %}{{ error }}{% endfor %}</small>
+                    {{ form.pdf(class="form-control form-control-lg is-invalid", placeholder="Paste PDF link here (e.g., Google Drive link)") }}
+                    <div class="invalid-feedback">{% for error in form.pdf.errors %}<span>{{ error }}</span>{% endfor %}</div>
+                {% else %}
+                    {{ form.pdf(class="form-control form-control-lg", placeholder="Paste PDF link here (e.g., Google Drive link)") }}
                 {% endif %}
+                <small class="form-text text-muted">Upload your PDF to Google Drive, make it "Anyone with link", and paste the link here.</small>
             </div>
 
         </fieldset>

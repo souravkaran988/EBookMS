@@ -1,5 +1,4 @@
 import os
-import secrets
 from flask import render_template, url_for, flash, redirect, request, current_app
 from app import app, db, bcrypt, mail
 from app.forms import RegistrationForm, LoginForm, BookForm, RequestResetForm, ResetPasswordForm
@@ -7,7 +6,6 @@ from app.models import User
 from flask_login import login_user, current_user, logout_user, login_required
 from bson.objectid import ObjectId
 from flask_mail import Message
-import PyPDF2
 
 # Import AI functions
 from app.ai_utils import generate_summary, get_recommendations
@@ -80,55 +78,39 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-# --- 4. HELPER FUNCTION FOR FILES ---
-def save_file(form_file, folder_name):
-    random_hex = secrets.token_hex(8)
-    _, f_ext = os.path.splitext(form_file.filename)
-    filename = random_hex + f_ext
-    file_path = os.path.join(app.root_path, 'static', folder_name, filename)
-    form_file.save(file_path)
-    return filename, file_path
-
-# --- 5. UPLOAD BOOK ROUTE ---
+# --- 4. UPLOAD BOOK ROUTE (UPDATED FOR LINKS) ---
 @app.route("/book/new", methods=['GET', 'POST'])
 @login_required
 def new_book():
     form = BookForm()
     if form.validate_on_submit():
-        if form.pdf.data and form.cover_photo.data:
-            pdf_filename, pdf_path = save_file(form.pdf.data, 'uploads')
-            cover_filename, _ = save_file(form.cover_photo.data, 'covers')
-            final_genre = form.custom_genre.data if form.genre.data == 'Other' else form.genre.data
-            
-            text_content = ""
-            try:
-                with open(pdf_path, 'rb') as f:
-                    reader = PyPDF2.PdfReader(f)
-                    for page in reader.pages[:10]: 
-                        text_content += page.extract_text()
-            except Exception as e:
-                print(f"Error reading PDF: {e}")
-                text_content = "Could not read text from PDF."
+        # We now take the direct URL string from the form
+        final_genre = form.custom_genre.data if form.genre.data == 'Other' else form.genre.data
+        
+        # Since we have URLs, we can't extract text easily. 
+        # We set a placeholder so the database stays consistent.
+        text_content = "Text content not available for linked PDFs."
 
-            book_data = {
-                "title": form.title.data,
-                "author": form.author.data,
-                "genre": final_genre,
-                "description": form.description.data,
-                "cover_image": cover_filename,
-                "pdf_file": pdf_filename,
-                "content": text_content,
-                "user_id": current_user.id,
-                "status": "pending",
-                "summary": "No summary yet"
-            }
-            db.books.insert_one(book_data)
-            flash('Book uploaded successfully! It is pending approval.', 'success')
-            return redirect(url_for('home'))
+        book_data = {
+            "title": form.title.data,
+            "author": form.author.data,
+            "genre": final_genre,
+            "description": form.description.data,
+            # SAVE THE LINKS DIRECTLY
+            "cover_image": form.cover_photo.data, 
+            "pdf_file": form.pdf.data,
+            "content": text_content,
+            "user_id": current_user.id,
+            "status": "pending",
+            "summary": "No summary yet"
+        }
+        db.books.insert_one(book_data)
+        flash('Book uploaded successfully! It is pending approval.', 'success')
+        return redirect(url_for('home'))
             
     return render_template('upload.html', title='New Book', form=form)
 
-# --- 6. BOOK DETAILS & READER ---
+# --- 5. BOOK DETAILS & READER ---
 @app.route("/book/<book_id>")
 def book_details(book_id):
     book = db.books.find_one({"_id": ObjectId(book_id)})
@@ -146,7 +128,7 @@ def read_book(book_id):
         return redirect(url_for('home'))
     return render_template('reader.html', book=book)
 
-# --- 7. AI SUMMARIZATION ---
+# --- 6. AI SUMMARIZATION ---
 @app.route("/book/<book_id>/generate_summary")
 @login_required
 def summarize_book(book_id):
@@ -155,8 +137,9 @@ def summarize_book(book_id):
         return redirect(url_for('home'))
         
     content = book.get('content')
-    if not content:
-        flash('No text content found in this book.', 'warning')
+    # We check if content is valid (and not our placeholder)
+    if not content or content == "Text content not available for linked PDFs.":
+        flash('AI Summary cannot be generated for linked PDFs (Text unavailable).', 'warning')
         return redirect(url_for('book_details', book_id=book_id))
         
     summary_text = generate_summary(content)
@@ -168,7 +151,7 @@ def summarize_book(book_id):
     flash('AI Summary generated successfully!', 'success')
     return redirect(url_for('book_details', book_id=book_id))
 
-# --- 8. READING LIST & RECOMMENDATIONS ---
+# --- 7. READING LIST & RECOMMENDATIONS ---
 @app.route("/book/<book_id>/save")
 @login_required
 def add_to_reading_list(book_id):
@@ -204,7 +187,7 @@ def my_library():
     
     return render_template('my_library.html', books=my_books, recommendations=recommendations)
 
-# --- 9. ADMIN PANEL ---
+# --- 8. ADMIN PANEL ---
 @app.route("/admin")
 @login_required
 def admin_panel():
@@ -240,20 +223,15 @@ def reject_book(book_id):
 @app.route("/book/<book_id>/delete_permanent")
 @login_required
 def delete_book_permanent(book_id):
-    # Security Check: Only Admins can do this
     if current_user.role != 'Admin':
         flash('Access Denied. Only Admins can delete books.', 'danger')
         return redirect(url_for('home'))
     
-    # Delete the book from Database
     db.books.delete_one({"_id": ObjectId(book_id)})
     flash('Book has been permanently deleted.', 'success')
-    
-    # Redirect to Home because the book details page no longer exists
     return redirect(url_for('home'))
 
-
-# --- 10. PASSWORD RESET LOGIC (REAL EMAIL) ---
+# --- 9. PASSWORD RESET LOGIC ---
 def send_reset_email(user):
     token = user.get_reset_token()
     msg = Message('Password Reset Request',
