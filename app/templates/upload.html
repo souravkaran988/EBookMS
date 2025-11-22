@@ -1,29 +1,19 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="content-section">
-    <form method="POST" action="">
+    <form method="POST" action="" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
         <fieldset class="form-group">
             <legend class="border-bottom mb-4">Upload a New Book</legend>
             
             <div class="form-group">
                 {{ form.title.label(class="form-control-label") }}
-                {% if form.title.errors %}
-                    {{ form.title(class="form-control form-control-lg is-invalid") }}
-                    <div class="invalid-feedback">{% for error in form.title.errors %}<span>{{ error }}</span>{% endfor %}</div>
-                {% else %}
-                    {{ form.title(class="form-control form-control-lg") }}
-                {% endif %}
+                {{ form.title(class="form-control form-control-lg") }}
             </div>
             
             <div class="form-group">
                 {{ form.author.label(class="form-control-label") }}
-                {% if form.author.errors %}
-                    {{ form.author(class="form-control form-control-lg is-invalid") }}
-                    <div class="invalid-feedback">{% for error in form.author.errors %}<span>{{ error }}</span>{% endfor %}</div>
-                {% else %}
-                    {{ form.author(class="form-control form-control-lg") }}
-                {% endif %}
+                {{ form.author(class="form-control form-control-lg") }}
             </div>
 
             <div class="form-group">
@@ -42,25 +32,19 @@
             </div>
 
             <div class="form-group">
-                <label class="form-control-label">Cover Image Link (URL)</label>
+                <label class="form-control-label">Cover Photo (JPG/PNG)</label>
+                {{ form.cover_photo(class="form-control-file") }}
                 {% if form.cover_photo.errors %}
-                    {{ form.cover_photo(class="form-control form-control-lg is-invalid", placeholder="Paste image link here (e.g., https://imgur.com/...)") }}
-                    <div class="invalid-feedback">{% for error in form.cover_photo.errors %}<span>{{ error }}</span>{% endfor %}</div>
-                {% else %}
-                    {{ form.cover_photo(class="form-control form-control-lg", placeholder="Paste image link here (e.g., https://imgur.com/...)") }}
+                    <small class="text-danger">{% for error in form.cover_photo.errors %}{{ error }}{% endfor %}</small>
                 {% endif %}
-                <small class="form-text text-muted">Copy an image address from Google Images and paste it here.</small>
             </div>
 
             <div class="form-group">
-                <label class="form-control-label">PDF Link (URL)</label>
+                <label class="form-control-label">Book PDF</label>
+                {{ form.pdf(class="form-control-file") }}
                 {% if form.pdf.errors %}
-                    {{ form.pdf(class="form-control form-control-lg is-invalid", placeholder="Paste PDF link here (e.g., Google Drive link)") }}
-                    <div class="invalid-feedback">{% for error in form.pdf.errors %}<span>{{ error }}</span>{% endfor %}</div>
-                {% else %}
-                    {{ form.pdf(class="form-control form-control-lg", placeholder="Paste PDF link here (e.g., Google Drive link)") }}
+                    <small class="text-danger">{% for error in form.pdf.errors %}{{ error }}{% endfor %}</small>
                 {% endif %}
-                <small class="form-text text-muted">Upload your PDF to Google Drive, make it "Anyone with link", and paste the link here.</small>
             </div>
 
         </fieldset>
@@ -69,17 +53,9 @@
         </div>
     </form>
 </div>
-
 <script>
-    const genreSelect = document.getElementById('genreSelect');
-    const customGenreDiv = document.getElementById('customGenreDiv');
-
-    genreSelect.addEventListener('change', function() {
-        if (this.value === 'Other') {
-            customGenreDiv.style.display = 'block';
-        } else {
-            customGenreDiv.style.display = 'none';
-        }
+    document.getElementById('genreSelect').addEventListener('change', function() {
+        document.getElementById('customGenreDiv').style.display = (this.value === 'Other') ? 'block' : 'none';
     });
 </script>
 {% endblock %}

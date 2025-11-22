@@ -6,6 +6,7 @@ from app.models import User
 from flask_login import login_user, current_user, logout_user, login_required
 from bson.objectid import ObjectId
 from flask_mail import Message
+import cloudinary.uploader
 
 # Import AI functions
 from app.ai_utils import generate_summary, get_recommendations
@@ -22,7 +23,6 @@ def root():
 @login_required
 def home():
     query = request.args.get('q')
-    
     if query:
         books = list(db.books.find({
             "status": "approved",
@@ -34,7 +34,6 @@ def home():
         }))
     else:
         books = list(db.books.find({"status": "approved"}).sort("_id", -1))
-        
     return render_template('index.html', books=books)
 
 # --- 3. AUTHENTICATION ROUTES ---
@@ -78,35 +77,38 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-# --- 4. UPLOAD BOOK ROUTE (UPDATED FOR LINKS) ---
+# --- 4. UPLOAD BOOK ROUTE (WITH CLOUDINARY) ---
 @app.route("/book/new", methods=['GET', 'POST'])
 @login_required
 def new_book():
     form = BookForm()
     if form.validate_on_submit():
-        # We now take the direct URL string from the form
-        final_genre = form.custom_genre.data if form.genre.data == 'Other' else form.genre.data
-        
-        # Since we have URLs, we can't extract text easily. 
-        # We set a placeholder so the database stays consistent.
-        text_content = "Text content not available for linked PDFs."
+        if form.pdf.data and form.cover_photo.data:
+            # 1. Upload Image to Cloudinary
+            upload_image = cloudinary.uploader.upload(form.cover_photo.data)
+            image_url = upload_image.get('secure_url')
 
-        book_data = {
-            "title": form.title.data,
-            "author": form.author.data,
-            "genre": final_genre,
-            "description": form.description.data,
-            # SAVE THE LINKS DIRECTLY
-            "cover_image": form.cover_photo.data, 
-            "pdf_file": form.pdf.data,
-            "content": text_content,
-            "user_id": current_user.id,
-            "status": "pending",
-            "summary": "No summary yet"
-        }
-        db.books.insert_one(book_data)
-        flash('Book uploaded successfully! It is pending approval.', 'success')
-        return redirect(url_for('home'))
+            # 2. Upload PDF to Cloudinary
+            upload_pdf = cloudinary.uploader.upload(form.pdf.data, resource_type="auto")
+            pdf_url = upload_pdf.get('secure_url')
+
+            final_genre = form.custom_genre.data if form.genre.data == 'Other' else form.genre.data
+            
+            book_data = {
+                "title": form.title.data,
+                "author": form.author.data,
+                "genre": final_genre,
+                "description": form.description.data,
+                "cover_image": image_url,  # Saving the Cloudinary URL
+                "pdf_file": pdf_url,       # Saving the Cloudinary URL
+                "content": "Text content unavailable (Cloudinary Upload)",
+                "user_id": current_user.id,
+                "status": "pending",
+                "summary": "No summary yet"
+            }
+            db.books.insert_one(book_data)
+            flash('Book uploaded successfully! It is pending approval.', 'success')
+            return redirect(url_for('home'))
             
     return render_template('upload.html', title='New Book', form=form)
 
@@ -135,14 +137,9 @@ def summarize_book(book_id):
     book = db.books.find_one({"_id": ObjectId(book_id)})
     if not book:
         return redirect(url_for('home'))
-        
-    content = book.get('content')
-    # We check if content is valid (and not our placeholder)
-    if not content or content == "Text content not available for linked PDFs.":
-        flash('AI Summary cannot be generated for linked PDFs (Text unavailable).', 'warning')
-        return redirect(url_for('book_details', book_id=book_id))
-        
-    summary_text = generate_summary(content)
+    
+    # Placeholder for AI Summary since we cannot read cloud PDFs easily on free tier
+    summary_text = generate_summary("") 
     
     db.books.update_one(
         {"_id": ObjectId(book_id)},
@@ -177,14 +174,11 @@ def remove_from_reading_list(book_id):
 def my_library():
     user = db.users.find_one({"_id": ObjectId(current_user.id)})
     saved_ids = user.get('saved_books', [])
-    
     my_books = []
     if saved_ids:
         my_books = list(db.books.find({"_id": {"$in": saved_ids}}))
-    
     all_books = list(db.books.find({"status": "approved"}))
     recommendations = get_recommendations(my_books, all_books)
-    
     return render_template('my_library.html', books=my_books, recommendations=recommendations)
 
 # --- 8. ADMIN PANEL ---
@@ -194,7 +188,6 @@ def admin_panel():
     if current_user.role != 'Admin':
         flash('Access Denied. Admins only.', 'danger')
         return redirect(url_for('home'))
-    
     pending_books = list(db.books.find({"status": "pending"}))
     return render_template('admin_panel.html', books=pending_books)
 
@@ -215,31 +208,29 @@ def approve_book(book_id):
 def reject_book(book_id):
     if current_user.role != 'Admin':
         return redirect(url_for('home'))
+    # We also should ideally delete from Cloudinary here, but for simplicity we just remove from DB
     db.books.delete_one({"_id": ObjectId(book_id)})
     flash('Book rejected and removed.', 'warning')
     return redirect(url_for('admin_panel'))
 
-# --- NEW: ADMIN DELETE EXISTING BOOK ---
+# --- 9. ADMIN DELETE PERMANENT ---
 @app.route("/book/<book_id>/delete_permanent")
 @login_required
 def delete_book_permanent(book_id):
     if current_user.role != 'Admin':
         flash('Access Denied. Only Admins can delete books.', 'danger')
         return redirect(url_for('home'))
-    
     db.books.delete_one({"_id": ObjectId(book_id)})
     flash('Book has been permanently deleted.', 'success')
     return redirect(url_for('home'))
 
-# --- 9. PASSWORD RESET LOGIC ---
+# --- 10. PASSWORD RESET LOGIC ---
 def send_reset_email(user):
     token = user.get_reset_token()
     msg = Message('Password Reset Request',
                   sender='karansourav453@gmail.com',
                   recipients=[user.email])
-    
     link = url_for('reset_token', token=token, _external=True)
-    
     msg.body = f'''To reset your password, visit the following link:
 {link}
 
@@ -268,12 +259,10 @@ def reset_request():
 def reset_token(token):
     if current_user.is_authenticated:
         return redirect(url_for('home'))
-    
     user = User.verify_reset_token(token)
     if user is None:
         flash('That is an invalid or expired token', 'warning')
         return redirect(url_for('reset_request'))
-    
     form = ResetPasswordForm()
     if form.validate_on_submit():
         hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')

@@ -1,4 +1,5 @@
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileAllowed, FileRequired
 from wtforms import StringField, PasswordField, SubmitField, BooleanField, TextAreaField, SelectField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError, Optional, URL
 from app import db
@@ -30,16 +31,16 @@ class BookForm(FlaskForm):
     title = StringField('Book Title', validators=[DataRequired()])
     author = StringField('Author', validators=[DataRequired()])
     
-    # CHANGED: Now asking for a Link (URL) instead of a File
-    cover_photo = StringField('Cover Image URL', validators=[
-        DataRequired(),
-        URL(message="Please enter a valid Image URL starting with http:// or https://")
+    # BACK TO FILE UPLOAD (Images only)
+    cover_photo = FileField('Cover Photo', validators=[
+        FileRequired(),
+        FileAllowed(['jpg', 'png', 'jpeg'], 'Images only!')
     ])
 
-    # CHANGED: Now asking for a Link (URL) instead of a File
-    pdf = StringField('PDF Download URL', validators=[
-        DataRequired(),
-        URL(message="Please enter a valid PDF URL starting with http:// or https://")
+    # BACK TO FILE UPLOAD (PDFs only)
+    pdf = FileField('Upload PDF', validators=[
+        FileRequired(),
+        FileAllowed(['pdf'], 'PDFs only!')
     ])
 
     genre = SelectField('Genre', choices=[
