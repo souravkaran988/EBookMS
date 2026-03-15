@@ -3,3 +3,9 @@ __pycache__/
 *.pyc
 instance/
 .pytest_cache/
+.env
+*.env
+make_admin.py
+test_db.py
+
+

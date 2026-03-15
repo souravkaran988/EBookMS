@@ -5,7 +5,11 @@
         <div class="col-md-4">
             <div class="card shadow">
                 {% if book.cover_image %}
-                    <img src="{{ url_for('static', filename='covers/' + book.cover_image) }}" class="card-img-top" alt="Book Cover">
+                    {% if book.cover_image.startswith('http') %}
+                        <img src="{{ book.cover_image }}" class="card-img-top" alt="Book Cover">
+                    {% else %}
+                        <img src="{{ url_for('static', filename='covers/' + book.cover_image) }}" class="card-img-top" alt="Book Cover">
+                    {% endif %}
                 {% else %}
                     <div style="height: 400px; background-color: #eee; display: flex; align-items: center; justify-content: center;">No Cover</div>
                 {% endif %}
@@ -14,8 +18,7 @@
                         <a href="{{ url_for('read_book', book_id=book._id) }}" class="btn btn-success btn-block mb-2">
                             📖 Read Now
                         </a>
-                        
-                        <a href="{{ url_for('static', filename='uploads/' + book.pdf_file) }}" class="btn btn-outline-primary btn-block" download>
+                        <a href="{{ url_for('download_book', book_id=book._id) }}" class="btn btn-outline-primary btn-block">
                             Download PDF
                         </a>
                     {% else %}

@@ -7,40 +7,36 @@ from flask_mail import Mail
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
+from dotenv import load_dotenv
+
+# Load .env file
+load_dotenv()
 
 app = Flask(__name__)
 
 # 1. Security Config
-# This looks for a secret key in the environment, or uses a default one for local testing
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'super_secret_key_123')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 
 # 2. Database Config
-# This looks for the MongoDB URI in the environment (Render), or uses your hardcoded one (Local)
-mongo_uri = os.environ.get('MONGO_URI', "mongodb+srv://admin:password988@cluster0.xdnzcnm.mongodb.net/?appName=Cluster0")
+mongo_uri = os.environ.get('MONGO_URI')
 
-# 3. CLOUDINARY CONFIGURATION (FOR PERMANENT FILES)
-# ---------------------------------------------------------
-# ⚠️ ACTION REQUIRED: REPLACE THE VALUES BELOW WITH YOUR REAL KEYS
-# Get them from: https://console.cloudinary.com/console/dashboard
-# ---------------------------------------------------------
-cloudinary.config( 
-  cloud_name = "duj6ln743", 
-  api_key = "569687514872446", 
-  api_secret = "WqSDBObhr12rGPCi5LqA2-HOuOk" 
+# 3. Cloudinary Configuration
+cloudinary.config(
+    cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    api_key = os.environ.get('CLOUDINARY_API_KEY'),
+    api_secret = os.environ.get('CLOUDINARY_API_SECRET')
 )
 
-# 4. EMAIL CONFIGURATION (Gmail)
+# 4. Email Configuration
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-# It looks for email/password in environment, or uses the hardcoded fallback
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'karansourav453@gmail.com')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'nlqz nduo zunz omra') 
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 
 # 5. Initialize Database
-# We set a 5-second timeout so it doesn't hang forever if connection fails
 client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
-db = client.ebook_db 
+db = client.ebook_db
 
 # Quick connection test
 try:
@@ -58,6 +54,7 @@ login_manager.login_message_category = 'info'
 mail = Mail(app)
 
 # 7. Import Routes and Models
-# This must be at the END of the file to avoid circular import errors
 from app import routes
 from app import models
+
+

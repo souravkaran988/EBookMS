@@ -19,13 +19,22 @@
             <div class="card shadow-sm">
                 <div class="card-body p-0">
                     {% if book.pdf_file %}
-                        <iframe 
-                            src="{{ url_for('static', filename='uploads/' + book.pdf_file) }}" 
-                            width="100%" 
-                            height="800px" 
-                            style="border: none;"
-                            type="application/pdf">
-                        </iframe>
+                        {% if book.pdf_file.startswith('http') %}
+                            <iframe 
+                                src="https://docs.google.com/viewer?url={{ book.pdf_file | urlencode }}&embedded=true" 
+                                width="100%" 
+                                height="800px" 
+                                style="border: none;">
+                            </iframe>
+                        {% else %}
+                            <iframe 
+                                src="{{ url_for('static', filename='uploads/' + book.pdf_file) }}" 
+                                width="100%" 
+                                height="800px" 
+                                style="border: none;"
+                                type="application/pdf">
+                            </iframe>
+                        {% endif %}
                     {% else %}
                         <div class="text-center py-5">
                             <h3>Error: PDF file not found.</h3>

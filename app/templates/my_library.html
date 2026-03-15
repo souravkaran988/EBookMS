@@ -16,7 +16,11 @@
                 <div class="card mb-4 shadow-sm" style="width: 100%;">
                     <div style="height: 200px; overflow: hidden; background-color: #eee;">
                         {% if book.cover_image %}
-                            <img src="{{ url_for('static', filename='covers/' + book.cover_image) }}" class="card-img-top" alt="Cover" style="height: 100%; object-fit: cover;">
+                            {% if book.cover_image.startswith('http') %}
+                                <img src="{{ book.cover_image }}" class="card-img-top" alt="Cover" style="height: 100%; object-fit: cover;">
+                            {% else %}
+                                <img src="{{ url_for('static', filename='covers/' + book.cover_image) }}" class="card-img-top" alt="Cover" style="height: 100%; object-fit: cover;">
+                            {% endif %}
                         {% else %}
                             <div class="d-flex align-items-center justify-content-center h-100">No Cover</div>
                         {% endif %}
@@ -47,7 +51,11 @@
                     <div class="card-header bg-transparent border-info text-info">Suggestion</div>
                     <div style="height: 200px; overflow: hidden; background-color: #eee;">
                         {% if book.cover_image %}
-                            <img src="{{ url_for('static', filename='covers/' + book.cover_image) }}" class="card-img-top" alt="Cover" style="height: 100%; object-fit: cover;">
+                            {% if book.cover_image.startswith('http') %}
+                                <img src="{{ book.cover_image }}" class="card-img-top" alt="Cover" style="height: 100%; object-fit: cover;">
+                            {% else %}
+                                <img src="{{ url_for('static', filename='covers/' + book.cover_image) }}" class="card-img-top" alt="Cover" style="height: 100%; object-fit: cover;">
+                            {% endif %}
                         {% else %}
                             <div class="d-flex align-items-center justify-content-center h-100">No Cover</div>
                         {% endif %}

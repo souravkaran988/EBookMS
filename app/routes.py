@@ -1,5 +1,5 @@
 import os
-from flask import render_template, url_for, flash, redirect, request, current_app
+from flask import render_template, url_for, flash, redirect, request, current_app, Response
 from app import app, db, bcrypt, mail
 from app.forms import RegistrationForm, LoginForm, BookForm, RequestResetForm, ResetPasswordForm
 from app.models import User
@@ -7,6 +7,7 @@ from flask_login import login_user, current_user, logout_user, login_required
 from bson.objectid import ObjectId
 from flask_mail import Message
 import cloudinary.uploader
+import requests as http_requests
 
 # Import AI functions
 from app.ai_utils import generate_summary, get_recommendations
@@ -84,12 +85,37 @@ def new_book():
     form = BookForm()
     if form.validate_on_submit():
         if form.pdf.data and form.cover_photo.data:
+
+            # Check PDF file size — Cloudinary free plan limit is 10MB
+            MAX_PDF_SIZE = 10 * 1024 * 1024  # 10MB in bytes
+            form.pdf.data.seek(0, 2)  # Seek to end of file
+            pdf_size = form.pdf.data.tell()  # Get file size
+            form.pdf.data.seek(0)  # Reset back to start
+
+            if pdf_size > MAX_PDF_SIZE:
+                flash(f'PDF file is too large ({pdf_size // (1024*1024)}MB). Maximum allowed size is 10MB. Please compress your PDF and try again.', 'danger')
+                return render_template('upload.html', title='New Book', form=form)
+
+            # Check cover image size — 10MB limit
+            MAX_IMAGE_SIZE = 10 * 1024 * 1024
+            form.cover_photo.data.seek(0, 2)
+            image_size = form.cover_photo.data.tell()
+            form.cover_photo.data.seek(0)
+
+            if image_size > MAX_IMAGE_SIZE:
+                flash(f'Cover image is too large ({image_size // (1024*1024)}MB). Maximum allowed size is 10MB.', 'danger')
+                return render_template('upload.html', title='New Book', form=form)
+
             # 1. Upload Image to Cloudinary
-            upload_image = cloudinary.uploader.upload(form.cover_photo.data)
+            upload_image = cloudinary.uploader.upload(form.cover_photo.data, resource_type="image")
             image_url = upload_image.get('secure_url')
 
             # 2. Upload PDF to Cloudinary
-            upload_pdf = cloudinary.uploader.upload(form.pdf.data, resource_type="auto")
+            upload_pdf = cloudinary.uploader.upload(
+                form.pdf.data,
+                resource_type="raw",
+                use_filename=True
+            )
             pdf_url = upload_pdf.get('secure_url')
 
             final_genre = form.custom_genre.data if form.genre.data == 'Other' else form.genre.data
@@ -99,8 +125,8 @@ def new_book():
                 "author": form.author.data,
                 "genre": final_genre,
                 "description": form.description.data,
-                "cover_image": image_url,  # Saving the Cloudinary URL
-                "pdf_file": pdf_url,       # Saving the Cloudinary URL
+                "cover_image": image_url,
+                "pdf_file": pdf_url,
                 "content": "Text content unavailable (Cloudinary Upload)",
                 "user_id": current_user.id,
                 "status": "pending",
@@ -130,6 +156,33 @@ def read_book(book_id):
         return redirect(url_for('home'))
     return render_template('reader.html', book=book)
 
+# --- 5b. DOWNLOAD BOOK ROUTE ---
+@app.route("/book/<book_id>/download")
+@login_required
+def download_book(book_id):
+    book = db.books.find_one({"_id": ObjectId(book_id)})
+    if not book or not book.get('pdf_file'):
+        flash('File not found!', 'danger')
+        return redirect(url_for('home'))
+
+    pdf_url = book['pdf_file']
+
+    # Clean the book title for use as a filename
+    safe_title = "".join(c for c in book['title'] if c.isalnum() or c in (' ', '-', '_')).strip()
+    safe_title = safe_title.replace(' ', '_')
+    filename = f"{safe_title}.pdf"
+
+    # Fetch the file from Cloudinary and stream it to the user
+    response = http_requests.get(pdf_url, stream=True)
+
+    return Response(
+        response.iter_content(chunk_size=8192),
+        content_type='application/pdf',
+        headers={
+            'Content-Disposition': f'attachment; filename="{filename}"'
+        }
+    )
+
 # --- 6. AI SUMMARIZATION ---
 @app.route("/book/<book_id>/generate_summary")
 @login_required
@@ -138,7 +191,6 @@ def summarize_book(book_id):
     if not book:
         return redirect(url_for('home'))
     
-    # Placeholder for AI Summary since we cannot read cloud PDFs easily on free tier
     summary_text = generate_summary("") 
     
     db.books.update_one(
@@ -208,7 +260,6 @@ def approve_book(book_id):
 def reject_book(book_id):
     if current_user.role != 'Admin':
         return redirect(url_for('home'))
-    # We also should ideally delete from Cloudinary here, but for simplicity we just remove from DB
     db.books.delete_one({"_id": ObjectId(book_id)})
     flash('Book rejected and removed.', 'warning')
     return redirect(url_for('admin_panel'))
